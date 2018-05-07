@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+          
+        }
+        .demo{
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+            background: url('jpg/1.png');
+            background-size: 20px 20px
+        }
+    </style>
+</head>
+<body>
+    <div></div>
+    
+    <div class="demo"></div>
+    <script src="jsUtil.js"></script>
+    <script src="game.js"></script>
+    <script>
+        window.onload=function(){
+            var game = new Game ();
+            game.init();
+            game.run();
+        }
+    
+    </script>
+</body>
+</html>
