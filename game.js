@@ -33,6 +33,7 @@ var Snack = JsUtil.single() ;
 var Ground = JsUtil.single() ;
 var Game = JsUtil.single() ;
 
+
 //方法集合
 var TouchEventEnum = {
     MOVE :'Move',
@@ -55,13 +56,45 @@ game.init =function(){
     var gameSnack = new Snack();
     gameSnack.init(gameGround);
     this.snack = gameSnack;
-    var gameFood = new Food();
+    this.food(gameGround,gameSnack);
     // gameFood.init()
     // console.log(gameFood.init)
 }
+game.food=function(gameGround,gameSnack){
+   
+    function isColor(){
+        var foodXY={};
+        // parseInt(Math.random()*30+1
+        foodXY.x = parseInt(Math.random()*28)+1;
+        foodXY.y = parseInt(Math.random()*28)+1;
+        var foodType = gameGround.squareTable[foodXY.x][foodXY.y];
+    
+        // console.log(gameSnack.head.x)
+        // console.log(gameSnack.head.y)
+        if(foodType.view.style.backgroundColor != 'orange' ){
+            
+            isColor();
+        }
+        else{
+            // var restartFood=foodXY();
+            return foodXY;
+        }
+    }
+    var newFoodXY=isColor();
+   
+    var newFood = SquareFactory.create('Food',newFoodXY.x,newFoodXY.y,null)
+    gameGround.remove(newFoodXY.x,newFoodXY.y)
+    gameGround.append(newFoodXY.x,newFoodXY.y ,newFood)
+}
 game.over =function(){
-    alert('游戏结束,分数为'+game.score);
-    clearInterval(game.timer);
+     var restart = confirm('游戏结束,分数为'+this.score+',确认重新开始游戏吗？');
+    clearInterval(this.timer);
+    if(restart == true){
+        document.body.innerHTML='';
+        var game =new Game();
+        game.init();
+        game.run();
+    }
   
 }
 game.run = function(){
@@ -137,12 +170,11 @@ ground.append = function(x,y,square){
 }
 //工厂方法
 function SquareFactory(){}
-SquareFactory.create =function(type,x,y){
+SquareFactory.create =function(type,x,y,url){
     if( typeof SquareFactory[type] !=='function'){
-        console.log(type)
         throw 'Error'
     }
-    var result =SquareFactory[type](x,y);
+    var result =SquareFactory[type](x,y,url);
     return result;
 }
 //floor food wall snackhead snackbody 5种情况
@@ -151,6 +183,7 @@ SquareFactory.commonInit = function(obj,x1,y1,color,touchEvent,myurl){
      obj.y = y1;
      obj.view = document.createElement('div');
      obj.view.style.position='absolute';
+     obj.dataType=obj;
      obj.view.style.display = 'inline-block';
      obj.view.style.width =SQUARE_WIDTH + 'px';
      obj.view.style.height =SQUARE_WIDTH + 'px';
@@ -179,14 +212,15 @@ SquareFactory.Food = function(x1,y1){
     return food
 }
 
-SquareFactory.SnackHead = function(x1,y1){
+SquareFactory.SnackHead = function(x1,y1,url){
     var snackhead= new SnackHead();
-    this.commonInit(snackhead,x1,y1,'orange',TouchEventEnum.DEAD,'url(jpg/1.png)');
+    this.commonInit(snackhead,x1,y1,'orange',TouchEventEnum.DEAD,url);
     return snackhead
 }
-SquareFactory.SnackBody = function(x1,y1){
+SquareFactory.SnackBody = function(x1,y1,url){
     var snackbody= new SnackBody();
-    this.commonInit(snackbody,x1,y1,'orange',TouchEventEnum.DEAD,'url(jpg/2.png)');
+    
+    this.commonInit(snackbody,x1,y1,'orange',TouchEventEnum.DEAD,url);
     return snackbody
 }
 SquareFactory.Stone = function(x1,y1){
@@ -201,15 +235,15 @@ snack.tail = null ;
 //蛇的行走方向
 snack.direction = 0
 var DirectionEnum = {
-    UP :{x:0 , y:-1},
-    DOWN:{x:0 , y:1},
-    LEFT:{x:-1 , y:0},
-    RIGHT:{x:1 , y:0}
+    UP :{x:0 , y:-1,url:'up'},
+    DOWN:{x:0 , y:1,url:'down'},
+    LEFT:{x:-1 , y:0,url:'left'},
+    RIGHT:{x:1 , y:0,url:'right'}
 }
 snack.init = function(gameGround){
-    var tempHead = SquareFactory.create('SnackHead',3,1);
-    var tempBody1 = SquareFactory.create('SnackBody',2,1);
-    var tempBody2 = SquareFactory.create('SnackBody',1,1);
+    var tempHead = SquareFactory.create('SnackHead',3,1,'url(jpg/headright.png)');
+    var tempBody1 = SquareFactory.create('SnackBody',2,1,'url(jpg/bodyright.png)');
+    var tempBody2 = SquareFactory.create('SnackBody',1,1,'url(jpg/tailright.png)');
     gameGround.remove(3,1);
     gameGround.append(3,1, tempHead );
     gameGround.remove(2,1);
@@ -228,46 +262,54 @@ snack.init = function(gameGround){
     
     this.head = tempHead;
     this.tail = tempBody2;
+   
     this.direction =DirectionEnum.RIGHT;
+    this.head.direction=this.direction.url;
 }
-console.log(game)
 snack.move = function (game){
     
     var square = game.ground.squareTable[this.head.y + this.direction.y][this.head.x +this.direction.x]
-    // console.log(this.strategy[square.touch()] )
-   
     if(typeof this.strategy[square.touch()] == "function"){
-        this.strategy[square.touch()](game,this,square,false)
+        this.strategy[square.touch()](game,this,square,false,this.direction.url)
     }
 }
 snack.strategy = {
-    Move:function(game , snack ,square,formEat){
-        console.log('55555555555')
+    Move:function(game , snack ,square,formEat ,snackUrl){
+        
+        console.log(snack.head)
         var tempHead = snack.head.next;
-        var newBody = SquareFactory.create('SnackBody',snack.head.x,snack.head.y);
+        var newBody = SquareFactory.create('SnackBody',snack.head.x,snack.head.y,'url(jpg/body'+snackUrl+'.png)');
         newBody.next = tempHead ;
         tempHead.last = newBody ;
         tempHead = newBody ;
         game.ground.remove(snack.head.x,snack.head.y)
         game.ground.append(tempHead.x,tempHead.y,tempHead)
-        var newHead = SquareFactory.create('SnackHead',square.x,square.y)
+        var newHead = SquareFactory.create('SnackHead',square.x,square.y,'url(jpg/head'+snackUrl+'.png)')
         newHead.next = tempHead ;
         tempHead.last = newHead ;
         game.ground.remove(square.x , square.y)
         game.ground.append(square.x , square.y ,newHead);
         snack.head = newHead;
         snack.head.last = null ;
+        
         if(!formEat ){
             var floor = SquareFactory.create('Floor',snack.tail.x,snack.tail.y)
             game.ground.remove(floor.x , floor.y)
             game.ground.append(floor.x ,floor.y ,floor)
             snack.tail = snack.tail.last;
+            var str = snack.tail.view.style.background;
+            
+            snack.tail.view.style.background=str.replace(/body/, "tail");
+            // snack.tail.view.background
             snack.tail.next =null;
         }
     },
     Eat:function(game , snack ,square){
         game.score++;
-        this.Move(game,snack ,square,true)
+
+        this.Move(game,snack ,square,true,snack.direction.url)
+        // console.log(game.gameGround.food)
+        game.food(game.ground,snack);
         // var food = new Food();
         // food.init(game.ground,game)
     },
@@ -275,20 +317,5 @@ snack.strategy = {
         game.over()
     }
 }
-var food =new Food();
-food.init = function(gameGround){
-    
-    var newFood = SquareFactory.create('Food',4,6)
-    gameGround.remove(4 , 6)
-    gameGround.append(4 ,6 ,newFood)
-}
-console.log(food)
-// if(condition) {
-//     function xxx(){
 
-//     }
-// }else{
-//     function yyy(){
 
-//     }
-// }
