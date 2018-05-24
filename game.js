@@ -58,7 +58,7 @@ game.init =function(){
     this.snack = gameSnack;
     this.food(gameGround,gameSnack);
     // gameFood.init()
-    // console.log(gameFood.init)
+   
 }
 game.food=function(gameGround,gameSnack){
    
@@ -69,8 +69,7 @@ game.food=function(gameGround,gameSnack){
         foodXY.y = parseInt(Math.random()*28)+1;
         var foodType = gameGround.squareTable[foodXY.x][foodXY.y];
     
-        // console.log(gameSnack.head.x)
-        // console.log(gameSnack.head.y)
+       
         if(foodType.view.style.backgroundColor != 'orange' ){
             
             isColor();
@@ -101,20 +100,30 @@ game.run = function(){
     this.timer =setInterval(function(){
         var result =game.snack.move(game);
     },SPEED)
+    var lastDirection = game.snack.direction.url;
     document.onkeydown =function(e){
         var keyNum = window.event?e.keyCode :e.which;
+        
+        
         if(keyNum == 38 && game.snack.direction != DirectionEnum.DOWN){
             game.snack.direction = DirectionEnum.UP;
+            game.gotoDirection = lastDirection+'-up'
         }
         if(keyNum == 40 && game.snack.direction != DirectionEnum.UP){
             game.snack.direction = DirectionEnum.DOWN;
+            game.gotoDirection = lastDirection+'-down'
         }
         if(keyNum == 37 && game.snack.direction != DirectionEnum.RIGHT){
             game.snack.direction = DirectionEnum.LEFT;
+            game.gotoDirection = lastDirection+'-left'
         }
         if(keyNum == 39 && game.snack.direction != DirectionEnum.LEFT){
             game.snack.direction = DirectionEnum.RIGHT;
+            game.gotoDirection = lastDirection+'-right'
         }
+        lastDirection=game.snack.direction.url
+       
+
     }
 }
 
@@ -151,7 +160,7 @@ ground.init = function(){
                 square = SquareFactory.create('Floor',j,i)
             }
             this.squareTable[i][j] =square;
-            // console.log(square.view);
+           
             viewGround.appendChild(square.view)
         }
     }
@@ -183,7 +192,6 @@ SquareFactory.commonInit = function(obj,x1,y1,color,touchEvent,myurl){
      obj.y = y1;
      obj.view = document.createElement('div');
      obj.view.style.position='absolute';
-     obj.dataType=obj;
      obj.view.style.display = 'inline-block';
      obj.view.style.width =SQUARE_WIDTH + 'px';
      obj.view.style.height =SQUARE_WIDTH + 'px';
@@ -215,6 +223,7 @@ SquareFactory.Food = function(x1,y1){
 SquareFactory.SnackHead = function(x1,y1,url){
     var snackhead= new SnackHead();
     this.commonInit(snackhead,x1,y1,'orange',TouchEventEnum.DEAD,url);
+    snackhead.direction = snack.direction.url;
     return snackhead
 }
 SquareFactory.SnackBody = function(x1,y1,url){
@@ -234,6 +243,7 @@ snack.head = null ;
 snack.tail = null ;
 //蛇的行走方向
 snack.direction = 0
+snack.gotoDirection = 0
 var DirectionEnum = {
     UP :{x:0 , y:-1,url:'up'},
     DOWN:{x:0 , y:1,url:'down'},
@@ -275,10 +285,17 @@ snack.move = function (game){
 }
 snack.strategy = {
     Move:function(game , snack ,square,formEat ,snackUrl){
-        
-        console.log(snack.head)
+        var arr=['right-up','right-down','down-left','down-right','left-up','left-down','up-left','up-right']
+        if(arr.indexOf(game.gotoDirection) != -1){
+            // console.log('包含')
+            bodyconnectUrl=game.gotoDirection;
+            game.gotoDirection = null;
+        }else{
+            bodyconnectUrl=snackUrl
+        }
+        console.log(bodyconnectUrl);
         var tempHead = snack.head.next;
-        var newBody = SquareFactory.create('SnackBody',snack.head.x,snack.head.y,'url(jpg/body'+snackUrl+'.png)');
+        var newBody = SquareFactory.create('SnackBody',snack.head.x,snack.head.y,'url(jpg/body'+bodyconnectUrl+'.png)');
         newBody.next = tempHead ;
         tempHead.last = newBody ;
         tempHead = newBody ;
@@ -296,11 +313,20 @@ snack.strategy = {
             var floor = SquareFactory.create('Floor',snack.tail.x,snack.tail.y)
             game.ground.remove(floor.x , floor.y)
             game.ground.append(floor.x ,floor.y ,floor)
+
             snack.tail = snack.tail.last;
+
             var str = snack.tail.view.style.background;
-            
-            snack.tail.view.style.background=str.replace(/body/, "tail");
+                if(str.indexOf('-') == -1){
+                    str =str.replace(/body/, "tail")
+                }else{
+                    str =str.replace(/body\w*\-+/, "tail")
+                }
+                console.log(str);
+            snack.tail.view.style.background=str;
+            snack.tail.view.style.backgroundSize ="30px 30px";
             // snack.tail.view.background
+           
             snack.tail.next =null;
         }
     },
